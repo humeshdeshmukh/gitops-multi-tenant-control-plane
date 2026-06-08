@@ -1,7 +1,7 @@
 # Default vcluster Helm values for tenant isolation
 syncer:
   extraArgs:
-  - --sync-all-node-status
+  - --sync-all-nodes
   - --sync-node-changes
   resources:
     limits:
