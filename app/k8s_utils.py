@@ -276,6 +276,27 @@ def trigger_argocd_sync(app_name):
         return False, "K8s client not available"
         
     try:
+        # Force a hard refresh to bypass git cache in argocd-repo-server
+        refresh_patch = {
+            "metadata": {
+                "annotations": {
+                    "argocd.argoproj.io/refresh": "hard"
+                }
+            }
+        }
+        try:
+            custom.patch_namespaced_custom_object(
+                group="argoproj.io",
+                version="v1alpha1",
+                namespace="argocd",
+                plural="applications",
+                name=app_name,
+                body=refresh_patch
+            )
+            logger.info(f"Triggered hard refresh on Application {app_name}")
+        except Exception as ref_err:
+            logger.warning(f"Failed to set hard refresh annotation: {ref_err}")
+
         patch_body = {
             "operation": {
                 "initiatedBy": {
