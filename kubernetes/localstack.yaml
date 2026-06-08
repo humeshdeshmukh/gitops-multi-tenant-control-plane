@@ -44,6 +44,7 @@ metadata:
   name: localstack
   namespace: localstack
 spec:
+  type: NodePort
   ports:
   - port: 4566
     targetPort: 4566

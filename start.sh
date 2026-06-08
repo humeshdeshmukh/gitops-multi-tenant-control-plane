@@ -135,14 +135,26 @@ echo -e "${GREEN}[OK] ArgoCD root bootstrap active.${NC}"
 # ------------------------------------------------------------------------------
 # SERVICE ACCESS DETAILS
 # ------------------------------------------------------------------------------
+# Ensure services are configured as NodePort for direct external access
+echo -e "\n${YELLOW}Configuring services for direct external access...${NC}"
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}' >/dev/null 2>&1 || true
+kubectl patch svc vault -n vault -p '{"spec": {"type": "NodePort"}}' >/dev/null 2>&1 || true
+kubectl patch svc localstack -n localstack -p '{"spec": {"type": "NodePort"}}' >/dev/null 2>&1 || true
+
 MINIKUBE_IP=$(minikube ip -p multi-tenant-platform)
 PORTAL_PORT=32080
 PORTAL_URL="http://${MINIKUBE_IP}:${PORTAL_PORT}"
 
-# Retrieve ArgoCD details
+# Retrieve NodePorts and Credentials
 ARGOCD_PORT=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
 ARGOCD_URL="http://${MINIKUBE_IP}:${ARGOCD_PORT}"
 ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+
+VAULT_PORT=$(kubectl get svc vault -n vault -o jsonpath='{.spec.ports[?(@.port==8200)].nodePort}')
+VAULT_URL="http://${MINIKUBE_IP}:${VAULT_PORT}"
+
+LOCALSTACK_PORT=$(kubectl get svc localstack -n localstack -o jsonpath='{.spec.ports[?(@.port==4566)].nodePort}')
+LOCALSTACK_URL="http://${MINIKUBE_IP}:${LOCALSTACK_PORT}"
 
 echo -e "\n${GREEN}======================================================================${NC}"
 echo -e "${GREEN}      PLATFORM CONTROL PLANE BOOTSTRAP AND GITOPS LOOP COMPLETE       ${NC}"
@@ -160,10 +172,12 @@ echo -e "   - Credentials: User: admin / Password: ${ARGOCD_PASSWORD}"
 echo -e "   - CLI Tunnel:  kubectl port-forward svc/argocd-server 8080:80 -n argocd"
 
 echo -e "\n${CYAN}3. HashiCorp Vault Server (Dev Mode)${NC}"
+echo -e "   - Access URL:  ${VAULT_URL}"
 echo -e "   - Status:      Online (namespace: vault)"
 echo -e "   - CLI Tunnel:  kubectl port-forward svc/vault 8200:8200 -n vault"
 
 echo -e "\n${CYAN}4. LocalStack AWS Emulator${NC}"
+echo -e "   - Access URL:  ${LOCALSTACK_URL}"
 echo -e "   - Status:      Online (namespace: localstack, port: 4566)"
 echo -e "   - CLI Tunnel:  kubectl port-forward svc/localstack 4566:4566 -n localstack"
 echo -e "----------------------------------------------------------------------\n"
