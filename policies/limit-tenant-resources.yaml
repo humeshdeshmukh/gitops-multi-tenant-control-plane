@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: limit-tenant-resources
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+  - name: check-resources
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - "tenant-*"
+    validate:
+      message: "Pods in tenant namespaces must specify CPU and memory requests and limits."
+      pattern:
+        spec:
+          containers:
+          - resources:
+              limits:
+                cpu: "?*"
+                memory: "?*"
+              requests:
+                cpu: "?*"
+                memory: "?*"

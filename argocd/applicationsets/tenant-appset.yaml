@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenant-workspaces
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: http://control-plane-portal.control-plane-system.svc.cluster.local:5006/git/platform-repo.git
+      revision: HEAD
+      directories:
+      - path: environments/*
+  template:
+    metadata:
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: http://control-plane-portal.control-plane-system.svc.cluster.local:5006/git/platform-repo.git
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true

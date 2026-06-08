@@ -1,0 +1,10 @@
+apiVersion: platform.devops.local/v1alpha1
+kind: PostgreSQLInstance
+metadata:
+  name: tenant-db
+  namespace: tenant-namespace
+spec:
+  parameters:
+    storageGB: 20
+    engineVersion: "14.5"
+    instanceClass: db.t4g.micro

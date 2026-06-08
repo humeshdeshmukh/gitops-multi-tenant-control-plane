@@ -1,0 +1,97 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: compositepostgresqlinstances.platform.devops.local
+spec:
+  group: platform.devops.local
+  names:
+    kind: CompositePostgreSQLInstance
+    plural: compositepostgresqlinstances
+  claimNames:
+    kind: PostgreSQLInstance
+    plural: postgresqlinstances
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              parameters:
+                type: object
+                properties:
+                  storageGB:
+                    type: integer
+                    default: 20
+                  engineVersion:
+                    type: string
+                    default: "14.5"
+                  instanceClass:
+                    type: string
+                    default: "db.t4g.micro"
+                required:
+                - storageGB
+            required:
+            - parameters
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: compositepostgresqlinstances.platform.devops.local
+  labels:
+    provider: aws
+spec:
+  compositeTypeRef:
+    apiVersion: platform.devops.local/v1alpha1
+    kind: CompositePostgreSQLInstance
+  mode: Pipeline
+  pipeline:
+  - step: patch-and-transform
+    functionRef:
+      name: function-patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: rdsinstance
+        base:
+          apiVersion: rds.aws.upbound.io/v1beta1
+          kind: Instance
+          spec:
+            forProvider:
+              region: us-east-1
+              allocatedStorage: 20
+              dbName: postgres
+              engine: postgres
+              engineVersion: "14.5"
+              instanceClass: db.t4g.micro
+              masterUsername: postgres
+              masterPasswordSecretRef:
+                name: db-password
+                namespace: crossplane-system
+                key: password
+              skipFinalSnapshot: true
+              publiclyAccessible: true
+            writeConnectionSecretToRef:
+              name: db-connection
+              namespace: crossplane-system
+        patches:
+        - fromFieldPath: spec.parameters.storageGB
+          toFieldPath: spec.forProvider.allocatedStorage
+        - fromFieldPath: spec.parameters.engineVersion
+          toFieldPath: spec.forProvider.engineVersion
+        - fromFieldPath: spec.parameters.instanceClass
+          toFieldPath: spec.forProvider.instanceClass
+        - fromFieldPath: metadata.labels[crossplane.io/claim-namespace]
+          toFieldPath: spec.writeConnectionSecretToRef.namespace
+        - fromFieldPath: metadata.labels[crossplane.io/claim-name]
+          toFieldPath: spec.writeConnectionSecretToRef.name
+          transforms:
+          - type: string
+            string:
+              fmt: "%s-conn"
+  writeConnectionSecretsToNamespace: crossplane-system

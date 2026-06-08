@@ -1,0 +1,24 @@
+# Default vcluster Helm values for tenant isolation
+syncer:
+  extraArgs:
+  - --sync-all-node-status
+  - --sync-node-changes
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+vcluster:
+  image: loftsh/vcluster:0.19.5
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+# Ensure internal storage is SQLite for lightweight footprint
+storage:
+  persistence: false

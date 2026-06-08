@@ -1,0 +1,44 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-cross-tenant
+  namespace: tenant-namespace
+spec:
+  podSelector: {} # Applies to all pods in the namespace
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector: {} # Allow traffic from pods in the same namespace
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: control-plane-system # Allow traffic from portal/backend
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: argocd # Allow traffic from ArgoCD
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-system-egress
+  namespace: tenant-namespace
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector: {} # Allow egress to kube-system for DNS
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: localstack # Allow egress to LocalStack
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: vault # Allow egress to HashiCorp Vault
+  - to:
+    - podSelector: {} # Allow egress to same namespace

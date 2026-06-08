@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis Control Plane - Multi-Tenant Platform Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1f2937;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-cyan: #06b6d4;
+            --accent-purple: #8b5cf6;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --border-color: #374151;
+            --glow-blue: rgba(59, 130, 246, 0.15);
+            --glow-green: rgba(16, 185, 129, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+            box-shadow: 0 0 15px var(--glow-blue);
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #ffffff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .panel-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Provision Form */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.375rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: border-color 0.15s ease-in-out;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px var(--glow-blue);
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            padding: 0.625rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: opacity 0.15s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent-red), #b91c1c);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            color: var(--text-primary);
+            background-color: #2d3748;
+        }
+
+        /* Status Metrics Dashboard */
+        .metrics-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-value {
+            font-size: 1.875rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 0.25rem;
+            background: linear-gradient(to right, #ffffff, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Topology Visualizer */
+        .topology-container {
+            position: relative;
+            height: 380px;
+            background-color: #0d1321;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .topology-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .node-overlay {
+            position: absolute;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .node-element {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background-color: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .node-element:hover {
+            transform: scale(1.1);
+        }
+
+        .node-element svg {
+            width: 1.75rem;
+            height: 1.75rem;
+        }
+
+        .node-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* Active Tenants List */
+        .tenant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .tenant-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tenant-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--accent-cyan), var(--accent-blue));
+        }
+
+        .tenant-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .tenant-title {
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: white;
+        }
+
+        .tenant-status-pill {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .tenant-status-pill.ready {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            border-line: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .tenant-spec-list {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .tenant-spec-item span {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .tenant-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Commit and System tables */
+        .logs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .git-log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .git-commit {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .commit-header {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .commit-hash {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .commit-msg {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .table-container {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid rgba(55, 65, 81, 0.3);
+            color: var(--text-primary);
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Utility classes */
+        .text-cyan { color: var(--accent-cyan); }
+        .text-blue { color: var(--accent-blue); }
+        .text-purple { color: var(--accent-purple); }
+        .text-green { color: var(--accent-green); }
+        .text-yellow { color: var(--accent-yellow); }
+        .text-red { color: var(--accent-red); }
+        
+        /* Spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 50%;
+            border-left-color: white;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">Æ</div>
+            <div class="logo-text">
+                <h1>Aegis Platform Control Plane</h1>
+                <p>Multi-Tenant GitOps Orchestration & Virtualization Console</p>
+            </div>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span>Control Plane Online</span>
+        </div>
+    </header>
+
+    <!-- Metrics Bar -->
+    <div class="metrics-bar">
+        <div class="metric-card">
+            <span class="metric-value" id="metric-tenants">0</span>
+            <span class="metric-label">Active Tenants</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value text-blue" id="metric-vclusters">0</span>
+            <span class="metric-label">vcluster Instances</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value text-purple" id="metric-claims">0</span>
+            <span class="metric-label">Crossplane Claims</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value text-cyan" id="metric-policies">0</span>
+            <span class="metric-label">Kyverno Policies</span>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="dashboard-grid">
+        
+        <!-- Left Panel: Self Service Provisioner -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>Self-Service Tenant Portal</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            
+            <form id="provision-form">
+                <div class="form-group">
+                    <label for="tenant_name">Tenant Identifier</label>
+                    <input type="text" id="tenant_name" class="form-control" placeholder="e.g. dev-team-alpha" required pattern="[a-z0-9\-]+">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Lowercase letters, numbers, and hyphens only</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="db_storage">Database Storage (GB)</label>
+                    <select id="db_storage" class="form-control">
+                        <option value="10">10 GB</option>
+                        <option value="20" selected>20 GB (Default)</option>
+                        <option value="50">50 GB</option>
+                        <option value="100">100 GB</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="db_class">RDS Database Spec</label>
+                    <select id="db_class" class="form-control">
+                        <option value="db.t4g.micro" selected>db.t4g.micro (Spot Instance)</option>
+                        <option value="db.t4g.small">db.t4g.small (Medium Workload)</option>
+                        <option value="db.t4g.medium">db.t4g.medium (High Performance)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="db_version">PostgreSQL Version</label>
+                    <select id="db_version" class="form-control">
+                        <option value="14.5" selected>PostgreSQL 14.5</option>
+                        <option value="15.3">PostgreSQL 15.3</option>
+                        <option value="16.1">PostgreSQL 16.1</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn" id="submit-btn">
+                    <span>Provision Environment</span>
+                </button>
+            </form>
+
+            <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="triggerGlobalSync()">
+                <span>Force ArgoCD Sync</span>
+            </button>
+        </div>
+
+        <!-- Right Panel: Topology & Active Tenants -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            
+            <!-- Topology Visualizer -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>Platform Ingress & Control Loop Topology</span>
+                    <span class="text-secondary" style="font-size: 0.875rem;">Interactive Live Map</span>
+                </div>
+                <div class="topology-container" id="topology-map">
+                    <svg class="topology-svg" id="topology-links"></svg>
+                    
+                    <!-- Fixed Central Platform Nodes -->
+                    <div class="node-overlay" style="left: 5%; top: 40%;" id="node-git">
+                        <div class="node-element" style="border-color: var(--accent-yellow); box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);">
+                            <svg fill="none" stroke="var(--accent-yellow)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                        </div>
+                        <span class="node-label text-yellow">Git Server</span>
+                    </div>
+
+                    <div class="node-overlay" style="left: 20%; top: 40%;" id="node-argocd">
+                        <div class="node-element" style="border-color: var(--accent-purple); box-shadow: 0 0 15px rgba(139, 92, 246, 0.15);">
+                            <svg fill="none" stroke="var(--accent-purple)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2"/></svg>
+                        </div>
+                        <span class="node-label text-purple">ArgoCD</span>
+                    </div>
+
+                    <div class="node-overlay" style="left: 42%; top: 10%;" id="node-host">
+                        <div class="node-element" style="border-color: var(--text-primary);">
+                            <svg fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
+                        </div>
+                        <span class="node-label">Host Cluster</span>
+                    </div>
+
+                    <div class="node-overlay" style="left: 42%; top: 45%;" id="node-kyverno">
+                        <div class="node-element" style="border-color: var(--accent-red);">
+                            <svg fill="none" stroke="var(--accent-red)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        </div>
+                        <span class="node-label text-red">Kyverno</span>
+                    </div>
+
+                    <div class="node-overlay" style="left: 42%; top: 78%;" id="node-vault">
+                        <div class="node-element" style="border-color: var(--accent-blue);">
+                            <svg fill="none" stroke="var(--accent-blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <span class="node-label text-blue">Vault PKI</span>
+                    </div>
+
+                    <!-- Dynamic Tenant Nodes placeholder -->
+                    <div id="dynamic-tenant-nodes" style="width: 100%; height: 100%; position: absolute; top:0; left:0; pointer-events: none; z-index: 3;">
+                        <!-- Generated via JS -->
+                    </div>
+
+                    <!-- Cloud Output Endpoint -->
+                    <div class="node-overlay" style="left: 88%; top: 40%;" id="node-localstack">
+                        <div class="node-element" style="border-color: var(--accent-green); box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);">
+                            <svg fill="none" stroke="var(--accent-green)" stroke-width="2" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        </div>
+                        <span class="node-label text-green">LocalStack RDS</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Tenants Grid -->
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Active Tenant Workspaces</h3>
+                <div class="tenant-grid" id="tenant-list">
+                    <p style="color: var(--text-muted); font-size: 0.875rem;">No active tenant workspaces provisioned. Use the Self-Service Tenant Portal to deploy one.</p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Logs & Events Sections -->
+    <div class="logs-grid">
+        
+        <!-- Git Ops Commit Log -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>GitOps Audit Ledger</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent-yellow);">git log</span>
+            </div>
+            <div class="git-log-list" id="git-commits">
+                <div style="color: var(--text-muted); font-size: 0.875rem;">Polling Git ledger...</div>
+            </div>
+        </div>
+
+        <!-- Kubernetes Active Pods -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>Control Plane Pod Runtime Status</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent-green);">kubectl get pods</span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Namespace</th>
+                            <th>Pod Name</th>
+                            <th>Status</th>
+                            <th>IP Address</th>
+                            <th>Age</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pods-table">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted);">Reading cluster runtime status...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+        let tenantCache = [];
+
+        // Fetch cluster and git information
+        async function fetchStatus() {
+            try {
+                // Fetch K8s Status
+                const res = await fetch(`${API_BASE}/k8s/status`);
+                const data = await res.json();
+                
+                // Update Metrics
+                document.getElementById('metric-tenants').innerText = data.tenants.length;
+                document.getElementById('metric-vclusters').innerText = data.vclusters.length;
+                document.getElementById('metric-claims').innerText = data.claims.length;
+                document.getElementById('metric-policies').innerText = data.policies.length;
+
+                // Render Tenants
+                renderTenants(data);
+                
+                // Render Pods
+                renderPods(data.pods);
+
+                // Render Topology Map
+                renderTopology(data);
+                
+                tenantCache = data.tenants;
+
+            } catch (err) {
+                console.error("Error fetching cluster status:", err);
+            }
+        }
+
+        async function fetchGitLog() {
+            try {
+                const res = await fetch(`${API_BASE}/git/log`);
+                const commits = await res.json();
+                renderGitLog(commits);
+            } catch (err) {
+                console.error("Error fetching Git logs:", err);
+            }
+        }
+
+        function renderGitLog(commits) {
+            const container = document.getElementById('git-commits');
+            if (commits.length === 0) {
+                container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.875rem;">No commits found in Git ledger.</div>`;
+                return;
+            }
+            container.innerHTML = commits.map(c => `
+                <div class="git-commit">
+                    <div class="commit-header">
+                        <span class="commit-hash">${c.hash}</span>
+                        <span>${c.age}</span>
+                    </div>
+                    <div class="commit-msg">${c.message}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display:flex; justify-content:space-between;">
+                        <span>By: ${c.author}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPods(pods) {
+            const tbody = document.getElementById('pods-table');
+            if (pods.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No pods running.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = pods.map(p => {
+                let statusClass = 'text-muted';
+                if (p.status === 'Running') statusClass = 'text-green';
+                else if (p.status === 'Pending') statusClass = 'text-yellow';
+                else if (p.status === 'Failed' || p.status === 'Error') statusClass = 'text-red';
+                
+                return `
+                    <tr>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">${p.namespace}</td>
+                        <td style="font-weight: 500;">${p.name.length > 30 ? p.name.substring(0, 28) + '...' : p.name}</td>
+                        <td class="${statusClass}" style="font-weight: 600;">${p.status}</td>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">${p.pod_ip}</td>
+                        <td style="color: var(--text-secondary);">${p.age}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderTenants(data) {
+            const container = document.getElementById('tenant-list');
+            if (data.tenants.length === 0) {
+                container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.875rem; grid-column: 1/-1; text-align: center; padding: 2rem;">No active tenant workspaces provisioned. Use the Self-Service Tenant Portal to deploy one.</p>`;
+                return;
+            }
+
+            container.innerHTML = data.tenants.map(t => {
+                // Find matching vcluster
+                const vc = data.vclusters.find(v => v.namespace === t);
+                const claim = data.claims.find(c => c.namespace === t);
+                
+                const vcStatus = vc ? vc.status : 'Pending Sync';
+                const dbStatus = claim ? (claim.ready === 'True' ? 'Ready' : 'Provisioning') : 'Pending Sync';
+                
+                return `
+                    <div class="tenant-card">
+                        <div class="tenant-card-header">
+                            <div>
+                                <h4 class="tenant-title">${t}</h4>
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">ns/${t}</span>
+                            </div>
+                            <span class="tenant-status-pill ${vcStatus === 'Ready' && dbStatus === 'Ready' ? 'ready' : ''}">
+                                ${vcStatus === 'Ready' && dbStatus === 'Ready' ? 'Active' : 'Syncing'}
+                            </span>
+                        </div>
+                        
+                        <div class="tenant-spec-list">
+                            <div class="tenant-spec-item">vcluster: <span class="${vcStatus === 'Ready' ? 'text-green' : 'text-yellow'}">${vcStatus}</span></div>
+                            <div class="tenant-spec-item">Database: <span class="${dbStatus === 'Ready' ? 'text-green' : 'text-yellow'}">${dbStatus}</span></div>
+                            <div class="tenant-spec-item">Storage: <span>${claim ? claim.storage : 20} GB</span></div>
+                            <div class="tenant-spec-item">Class: <span>${claim ? claim.class.replace('db.', '') : 't4g.micro'}</span></div>
+                        </div>
+
+                        <div class="tenant-actions">
+                            <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding: 0.25rem 0.5rem;" onclick="copyKubeconfigSnippet('${t}')">Connect CLI</button>
+                            <button class="btn btn-danger btn-sm" style="font-size:0.75rem; padding: 0.25rem 0.5rem;" onclick="deprovisionTenant('${t}')">Deprovision</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render Topology Links and Node Positions
+        function renderTopology(data) {
+            const overlay = document.getElementById('dynamic-tenant-nodes');
+            const svg = document.getElementById('topology-links');
+            
+            // Clear dynamic elements
+            overlay.innerHTML = '';
+            svg.innerHTML = '';
+            
+            const tenants = data.tenants;
+            if (tenants.length === 0) return;
+            
+            const svgWidth = svg.clientWidth || 800;
+            const svgHeight = svg.clientHeight || 380;
+            
+            // Positions of static nodes
+            const gitPos = { x: svgWidth * 0.05 + 28, y: svgHeight * 0.4 + 28 };
+            const argoPos = { x: svgWidth * 0.2 + 28, y: svgHeight * 0.4 + 28 };
+            const kyvernoPos = { x: svgWidth * 0.42 + 28, y: svgHeight * 0.45 + 28 };
+            const vaultPos = { x: svgWidth * 0.42 + 28, y: svgHeight * 0.78 + 28 };
+            const localstackPos = { x: svgWidth * 0.88 + 28, y: svgHeight * 0.4 + 28 };
+            
+            // Draw baseline static links
+            drawCurveLink(svg, gitPos, argoPos, 'var(--accent-yellow)');
+            
+            // For each tenant, draw node and connections
+            tenants.forEach((t, i) => {
+                const total = tenants.length;
+                
+                // Distribute tenants vertically
+                let yRatio = 0.5;
+                if (total > 1) {
+                    yRatio = 0.15 + (i * (0.7 / (total - 1)));
+                }
+                
+                const tenantY = svgHeight * yRatio;
+                const tenantX = svgWidth * 0.65;
+                
+                // Add Tenant namespace overlay node
+                const nodeHtml = `
+                    <div class="node-overlay" style="left: ${tenantX}px; top: ${tenantY}px; pointer-events: auto;">
+                        <div class="node-element" style="border-color: var(--accent-cyan); box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);" onclick="alert('Workspace: ${t}\\nVirtual Kubernetes Cluster + Crossplane claims')">
+                            <svg fill="none" stroke="var(--accent-cyan)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+                        </div>
+                        <span class="node-label text-cyan">${t}</span>
+                    </div>
+                `;
+                overlay.insertAdjacentHTML('beforeend', nodeHtml);
+                
+                // Link coords
+                const tenantPos = { x: tenantX + 28, y: tenantY + 28 };
+                
+                // Draw connection lines
+                // ArgoCD syncs to Tenant namespace
+                drawCurveLink(svg, argoPos, tenantPos, 'var(--accent-purple)');
+                // Kyverno validates the namespace workloads
+                drawCurveLink(svg, kyvernoPos, tenantPos, 'var(--accent-red)', true);
+                // Vault syncs keys/identities to namespace
+                drawCurveLink(svg, vaultPos, tenantPos, 'var(--accent-blue)', true);
+                // Crossplane links to LocalStack mock RDS
+                drawCurveLink(svg, tenantPos, localstackPos, 'var(--accent-green)');
+            });
+        }
+
+        function drawCurveLink(svg, from, to, color, dashed = false) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            
+            // Generate nice cubic bezier curve
+            const controlPointX1 = from.x + (to.x - from.x) * 0.5;
+            const controlPointY1 = from.y;
+            const controlPointX2 = from.x + (to.x - from.x) * 0.5;
+            const controlPointY2 = to.y;
+            
+            const d = `M ${from.x} ${from.y} C ${controlPointX1} ${controlPointY1}, ${controlPointX2} ${controlPointY2}, ${to.x} ${to.y}`;
+            
+            path.setAttribute('d', d);
+            path.setAttribute('stroke', color);
+            path.setAttribute('stroke-width', '1.5');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('opacity', '0.5');
+            if (dashed) {
+                path.setAttribute('stroke-dasharray', '4,4');
+            }
+            
+            svg.appendChild(path);
+        }
+
+        // Action Handlers
+        document.getElementById('provision-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="spinner"></span> <span>Provisioning...</span>`;
+
+            const tenant_name = document.getElementById('tenant_name').value;
+            const db_storage = parseInt(document.getElementById('db_storage').value);
+            const db_class = document.getElementById('db_class').value;
+            const db_version = document.getElementById('db_version').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/provision`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant_name, db_storage, db_class, db_version })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert(`Success: GitOps commit pushed!\n${data.message}`);
+                    document.getElementById('provision-form').reset();
+                    // Instantly trigger polling
+                    await fetchGitLog();
+                    await fetchStatus();
+                    // Trigger manual ArgoCD sync
+                    await triggerAppSync('root-platform-bootstrap');
+                } else {
+                    alert(`Provisioning failed: ${data.message}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+
+        async function deprovisionTenant(tenantName) {
+            if (!confirm(`Are you sure you want to deprovision ${tenantName}?\nThis will update Git declarations and trigger delete hooks.`)) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/deprovision`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant_name: tenantName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`Success: Deprovision GitOps commit pushed!\n${data.message}`);
+                    await fetchGitLog();
+                    await fetchStatus();
+                    await triggerAppSync('root-platform-bootstrap');
+                } else {
+                    alert(`Deprovisioning failed: ${data.message}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        async function triggerGlobalSync() {
+            await triggerAppSync('root-platform-bootstrap');
+            tenantCache.forEach(async (t) => {
+                await triggerAppSync(t);
+            });
+            alert('ArgoCD manual sync triggered on root bootstrap and workspace apps.');
+            setTimeout(fetchStatus, 3000);
+        }
+
+        async function triggerAppSync(appName) {
+            try {
+                await fetch(`${API_BASE}/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_name: appName })
+                });
+            } catch (err) {
+                console.error(`Failed to sync application ${appName}:`, err);
+            }
+        }
+
+        function copyKubeconfigSnippet(tenantName) {
+            const snippet = `vcluster connect vcluster-${tenantName} -n ${tenantName}`;
+            navigator.clipboard.writeText(snippet);
+            alert(`CLI connection command copied to clipboard:\n\n${snippet}\n\nRun this on your terminal to connect your kubectl to the guest cluster.`);
+        }
+
+        // Polling loop
+        setInterval(fetchStatus, 5000);
+        setInterval(fetchGitLog, 6000);
+
+        // Initial fetch
+        fetchStatus();
+        fetchGitLog();
+    </script>
+</body>
+</html>
