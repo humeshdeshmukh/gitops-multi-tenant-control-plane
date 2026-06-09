@@ -61,6 +61,9 @@ kubectl delete ns vault || true
 
 echo -e "${YELLOW}Uninstalling Kyverno Policy Engine...${NC}"
 helm uninstall kyverno -n kyverno || true
+echo -e "${YELLOW}Cleaning up leftover Kyverno webhook configurations...${NC}"
+kubectl delete validatingwebhookconfiguration kyverno-cel-exception-validating-webhook-cfg kyverno-cleanup-validating-webhook-cfg kyverno-exception-validating-webhook-cfg kyverno-global-context-validating-webhook-cfg kyverno-policy-validating-webhook-cfg kyverno-resource-validating-webhook-cfg kyverno-ttl-validating-webhook-cfg --ignore-not-found=true || true
+kubectl delete mutatingwebhookconfiguration kyverno-policy-mutating-webhook-cfg kyverno-resource-mutating-webhook-cfg kyverno-verify-mutating-webhook-cfg --ignore-not-found=true || true
 kubectl delete ns kyverno || true
 
 # ------------------------------------------------------------------------------

@@ -169,30 +169,43 @@ def test_gitops_flow():
     except Exception as e:
         print_status(f"Failed to trigger ArgoCD sync: {e}", "WARNING")
 
-    # Wait for ArgoCD reconciliation
-    print(f"Waiting 15 seconds for ArgoCD to detect Git commit and provision resources...")
-    time.sleep(15)
+    # Wait for ArgoCD reconciliation using a polling loop (up to 45 seconds)
+    print(f"Waiting for ArgoCD to detect Git commit and provision resources (up to 45 seconds)...")
+    success_ns = False
+    success_netpol = False
+    success_claim = False
     
-    # Verify Namespace is created
-    namespaces = run_cmd(["kubectl", "get", "ns", "-o", "jsonpath={.items[*].metadata.name}"])
-    if "tenant-integration-test" in namespaces:
-        print_status("Tenant namespace 'tenant-integration-test' was created by GitOps sync")
-    else:
+    for attempt in range(15):
+        if not success_ns:
+            namespaces = run_cmd(["kubectl", "get", "ns", "-o", "jsonpath={.items[*].metadata.name}"]) or ""
+            if "tenant-integration-test" in namespaces:
+                print_status("Tenant namespace 'tenant-integration-test' was created by GitOps sync")
+                success_ns = True
+        
+        if success_ns:
+            if not success_netpol:
+                netpols = run_cmd(["kubectl", "get", "netpol", "-n", "tenant-integration-test", "-o", "jsonpath={.items[*].metadata.name}"]) or ""
+                if "deny-cross-tenant" in netpols:
+                    print_status("NetworkPolicy 'deny-cross-tenant' successfully applied")
+                    success_netpol = True
+            
+            if not success_claim:
+                claims = run_cmd(["kubectl", "get", "postgresqlinstances.platform.devops.local", "-n", "tenant-integration-test", "-o", "jsonpath={.items[*].metadata.name}"]) or ""
+                if "tenant-integration-test-db" in claims:
+                    print_status("Crossplane database claim 'tenant-integration-test-db' successfully synced")
+                    success_claim = True
+                    
+        if success_ns and success_netpol and success_claim:
+            break
+            
+        time.sleep(3)
+        
+    if not success_ns:
         print_status("Tenant namespace 'tenant-integration-test' was not created", "ERROR")
         return False
-        
-    # Verify NetworkPolicy exists
-    netpols = run_cmd(["kubectl", "get", "netpol", "-n", "tenant-integration-test", "-o", "jsonpath={.items[*].metadata.name}"])
-    if "deny-cross-tenant" in netpols:
-        print_status("NetworkPolicy 'deny-cross-tenant' successfully applied")
-    else:
+    if not success_netpol:
         print_status("NetworkPolicy was not applied in tenant namespace", "ERROR")
-        
-    # Verify Crossplane Claim exists
-    claims = run_cmd(["kubectl", "get", "postgresqlinstances.platform.devops.local", "-n", "tenant-integration-test", "-o", "jsonpath={.items[*].metadata.name}"])
-    if "tenant-integration-test-db" in claims:
-        print_status("Crossplane database claim 'tenant-integration-test-db' successfully synced")
-    else:
+    if not success_claim:
         print_status("Crossplane database claim was not found in tenant namespace", "ERROR")
 
     # Clean up and Deprovision

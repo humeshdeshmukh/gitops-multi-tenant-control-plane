@@ -22,6 +22,35 @@ echo -e "${CYAN}================================================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
+# ------------------------------------------------------------------------------
+# PRE-FLIGHT CHECKS: Minikube & Cluster Health
+# ------------------------------------------------------------------------------
+echo -e "${YELLOW}Checking Minikube profile 'multi-tenant-platform' status...${NC}"
+if ! minikube status -p multi-tenant-platform >/dev/null 2>&1; then
+  echo -e "${YELLOW}Minikube profile 'multi-tenant-platform' is not running. Starting it now...${NC}"
+  minikube start -p multi-tenant-platform
+else
+  echo -e "${GREEN}[OK] Minikube profile 'multi-tenant-platform' is running.${NC}"
+fi
+
+echo -e "${YELLOW}Cleaning up any leftover Kyverno webhook configurations to prevent terminating namespace blocks...${NC}"
+kubectl delete validatingwebhookconfiguration kyverno-cel-exception-validating-webhook-cfg kyverno-cleanup-validating-webhook-cfg kyverno-exception-validating-webhook-cfg kyverno-global-context-validating-webhook-cfg kyverno-policy-validating-webhook-cfg kyverno-resource-validating-webhook-cfg kyverno-ttl-validating-webhook-cfg --ignore-not-found=true >/dev/null 2>&1 || true
+kubectl delete mutatingwebhookconfiguration kyverno-policy-mutating-webhook-cfg kyverno-resource-mutating-webhook-cfg kyverno-verify-mutating-webhook-cfg --ignore-not-found=true >/dev/null 2>&1 || true
+
+echo -e "${YELLOW}Waiting for terminating namespaces to be fully removed...${NC}"
+for ns in localstack control-plane-system; do
+  if kubectl get ns "$ns" >/dev/null 2>&1; then
+    PHASE=$(kubectl get ns "$ns" -o jsonpath='{.status.phase}')
+    if [ "$PHASE" = "Terminating" ]; then
+      echo -e "${YELLOW}Namespace $ns is terminating, waiting...${NC}"
+      while kubectl get ns "$ns" >/dev/null 2>&1; do
+        sleep 2
+      done
+      echo -e "${GREEN}Namespace $ns has been removed.${NC}"
+    fi
+  fi
+done
+
 # Helper function to print step headers
 print_step() {
     echo -e "\n${BLUE}>>> [STEP] $1...${NC}"
@@ -55,6 +84,11 @@ helm upgrade --install kyverno kyverno/kyverno \
   --set "cleanupController.replicas=1" \
   --set "reportsController.replicas=1"
 
+echo -e "${YELLOW}Waiting for Kyverno deployment resource to be created...${NC}"
+until kubectl get deployment kyverno-admission-controller -n kyverno >/dev/null 2>&1; do
+  sleep 2
+done
+
 echo -e "${YELLOW}Waiting for Kyverno deployment to be ready...${NC}"
 kubectl rollout status deployment/kyverno-admission-controller -n kyverno --timeout=360s
 echo -e "${GREEN}[OK] Kyverno policy engine is active.${NC}"
@@ -72,6 +106,11 @@ helm upgrade --install vault hashicorp/vault \
   --namespace vault \
   --create-namespace \
   --set "server.dev.enabled=true"
+
+echo -e "${YELLOW}Waiting for Vault pod to be created...${NC}"
+until kubectl get pod vault-0 -n vault >/dev/null 2>&1; do
+  sleep 2
+done
 
 echo -e "${YELLOW}Waiting for Vault server to be ready...${NC}"
 kubectl wait --for=condition=Ready pod/vault-0 -n vault --timeout=360s
@@ -116,6 +155,11 @@ echo -e "${GREEN}[OK] Image loaded successfully.${NC}"
 print_step "6/7: Deploying Platform Dashboard Portal"
 echo -e "${YELLOW}Applying dashboard deployment and NodePort service...${NC}"
 kubectl apply -f kubernetes/platform-portal.yaml
+
+echo -e "${YELLOW}Waiting for dashboard deployment resource to be created...${NC}"
+until kubectl get deployment control-plane-portal -n control-plane-system >/dev/null 2>&1; do
+  sleep 2
+done
 
 echo -e "${YELLOW}Waiting for dashboard pod to become ready...${NC}"
 kubectl rollout status deployment/control-plane-portal -n control-plane-system --timeout=360s
